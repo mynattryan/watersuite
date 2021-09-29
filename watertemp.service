@@ -1,0 +1,12 @@
+[Unit]
+Description=Pump House Water Freeze Warning
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/mynatt/watersuite/watertemp.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
