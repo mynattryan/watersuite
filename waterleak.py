@@ -24,8 +24,9 @@ from pushover import pushover
 #   MCP3008 DIN     -> RPi MOSI
 #   MCP3008 CS/SHDN -> RPi CE0
 
-# The leak detection rope is connected as a voltage divider with 2Mohm to ground, and the rope to 3.3V
-LEAK_CHANNEL = 0
+# The leak detection ropes are each connected as a voltage divider with 2Mohm to ground, and the rope to 3.3V
+LEAK1_CHANNEL = 0 # water pump
+LEAK2_CHANNEL = 3 # irrigation
 LEAK_THRESHOLD = 200 # scale of 0-1023
 
 
@@ -41,28 +42,48 @@ mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
 INTERVAL = 15
 
 
-
-leak_reported = False
+leak1_reported = False
+leak2_reported = False
 
 while True:
-    # read leak detection rope
-    leak_value = mcp.read_adc(LEAK_CHANNEL)
-    print('LEAK: {}'.format(leak_value))
+    # read leak detection ropes
+    leak1_value = mcp.read_adc(LEAK1_CHANNEL)
+    leak2_value = mcp.read_adc(LEAK2_CHANNEL)
+    print('LEAK1: {}'.format(leak1_value))
+    print('LEAK2: {}'.format(leak2_value))
 
-    # check to see if the leak reading exceeds the threshold
-    if leak_value > LEAK_THRESHOLD:
+    ### LEAK 1 ###
+    # check to see if the leak readings exceed the threshold
+    if leak1_value > LEAK_THRESHOLD:
         # if this leak is unreported
-        if not leak_reported:
+        if not leak1_reported:
             # build message and notify
-            notice = '<font color="#ff0000">CRITICAL!</font> Water leak detected in the pump house (ADC: {0})'.format(leak_value)
+            notice = '<font color="#ff0000">CRITICAL!</font> Water leak detected near pump and filters (ADC: {0})'.format(leak1_value)
             print(notice)
             pushover(app='water_leak', message=notice, title='**ALERT** Water Leak **ALERT**',
                      users='r_and_j', priority=1, html=True)
 
         # set this leak as reported
-        leak_reported = True
+        leak1_reported = True
     else:
        # reset the "leak reported" flag
-       leak_reported = False
+       leak1_reported = False
+
+    ### LEAK 2 ###
+    # check to see if the leak readings exceed the threshold
+    if leak2_value > LEAK_THRESHOLD:
+        # if this leak is unreported
+        if not leak2_reported:
+            # build message and notify
+            notice = '<font color="#ff0000">CRITICAL!</font> Water leak detected near irrigation valves (ADC: {0})'.format(leak2_value)
+            print(notice)
+            pushover(app='water_leak', message=notice, title='**ALERT** Water Leak **ALERT**',
+                     users='r_and_j', priority=1, html=True)
+
+        # set this leak as reported
+        leak2_reported = True
+    else:
+       # reset the "leak reported" flag
+       leak2_reported = False
 
     time.sleep(INTERVAL)
